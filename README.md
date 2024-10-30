@@ -1,5 +1,6 @@
 [![npm version](https://badge.fury.io/js/bank-transaction-extractor.svg)](https://badge.fury.io/js/bank-transaction-extractor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Downloads](https://img.shields.io/npm/dm/bank-transaction-extractor.svg)](https://www.npmjs.com/package/bank-transaction-extractor)
 
 # Bank Transaction Extractor
 

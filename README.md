@@ -135,4 +135,4 @@ Always wrap your calls in try-catch blocks for proper error handling.
 
 ## License
 
-MIT License - see the LICENSE file for details
+[MIT License](LICENSE) - see the [LICENSE](LICENSE) file for details

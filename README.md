@@ -1,3 +1,6 @@
+[![npm version](https://badge.fury.io/js/bank-transaction-extractor.svg)](https://badge.fury.io/js/bank-transaction-extractor)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 # Bank Transaction Extractor
 
 A Node.js library for automated transaction extraction from online banking portals with currency conversion support. Designed for financial institutions that use web-based interfaces with CAPTCHA verification.

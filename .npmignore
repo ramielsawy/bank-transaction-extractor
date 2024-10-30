@@ -1,0 +1,8 @@
+tests/
+.vscode/
+.github/
+coverage/
+jest.config.js
+tsconfig.json
+.env*
+*.test.ts

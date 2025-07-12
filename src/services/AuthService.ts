@@ -96,9 +96,21 @@ async function attemptLogin(page: puppeteer.Page, username: string, password: st
 async function getCaptchaImage(page: puppeteer.Page): Promise<string> {
     const captchaSelector = config.selectors.login.captchaImage;
     const base64Image = await page.evaluate((selector) => {
-        const img = document.querySelector(selector) as HTMLImageElement;
-        return img ? img.src.split(',')[1] : null;
+        const container = document.querySelector(selector);
+        if (!container) return null;
+
+        // Try to find an <img> tag inside
+        const img = container.querySelector('img') as HTMLImageElement | null;
+        if (img && img.src.startsWith('data:image')) {
+            return img.src.split(',')[1];
+        }
+
+        // Or extract background-image from inline style
+        const bgStyle = window.getComputedStyle(container).backgroundImage;
+        const match = bgStyle?.match(/^url\("data:image\/[^;]+;base64,([^"]+)"\)/);
+        return match?.[1] || null;
     }, captchaSelector);
+
     if (!base64Image) {
         throw new Error('CAPTCHA image not found');
     }
@@ -107,9 +119,9 @@ async function getCaptchaImage(page: puppeteer.Page): Promise<string> {
 
 async function refreshCaptcha(page: puppeteer.Page) {
     await page.evaluate((selector) => {
-        const refreshButton = document.querySelector(selector) as HTMLElement;
+        const refreshButton = document.querySelector(selector);
         if (refreshButton) {
-            refreshButton.click();
+            refreshButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         } else {
             console.error('CAPTCHA refresh button not found');
         }

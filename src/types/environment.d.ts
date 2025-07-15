@@ -21,6 +21,7 @@ declare global {
       BANK_DOWNLOAD_PATH: string;
       BANK_MAX_LOGIN_ATTEMPTS: string;
       BANK_MAX_CAPTCHA_ATTEMPTS: string;
+      OPENAI_API_KEY: string;
     }
   }
 }

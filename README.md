@@ -42,7 +42,7 @@ This library is compatible with online banking portals that:
 
 ## Features
 
-- Automated login with CAPTCHA solving
+- Automated login with CAPTCHA solving using OpenAI Vision API
 - Transaction extraction for specified accounts
 - Multi-currency support with conversion
 - TypeScript support
@@ -73,6 +73,7 @@ Create a `.env` file in your project root with the required variables. You can f
 ```
 BANK_BASE_URL=https://your-bank-url.com
 BANK_DOWNLOAD_PATH=./downloads
+OPENAI_API_KEY=sk-your-openai-api-key-here
 ```
 
 ## Usage

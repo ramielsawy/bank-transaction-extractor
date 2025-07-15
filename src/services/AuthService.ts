@@ -66,7 +66,7 @@ async function attemptLogin(page: puppeteer.Page, username: string, password: st
     for (let attempt = 1; attempt <= config.maxCaptchaAttempts; attempt++) {
         try {
             const base64Image = await getCaptchaImage(page);
-            captchaText = await solveCaptcha(base64Image, { expectedLength: 5, validationRegex: /^[a-zA-Z0-9]+$/, language: 'eng' });
+            captchaText = await solveCaptcha(base64Image, { expectedLength: 5, validationRegex: /^[a-zA-Z0-9]+$/ });
             break;
         } catch (error) {
             console.error('Error solving CAPTCHA:', error);
@@ -78,6 +78,15 @@ async function attemptLogin(page: puppeteer.Page, username: string, password: st
     }
 
     console.log('Entering CAPTCHA:', captchaText);
+    
+    // Wait for the captcha input field to be visible and ready
+    await page.waitForSelector(config.selectors.login.captchaInput, { visible: true });
+    
+    // Clear any existing text and type the captcha
+    await page.click(config.selectors.login.captchaInput);
+    await page.keyboard.down('Control');
+    await page.keyboard.press('KeyA');
+    await page.keyboard.up('Control');
     await page.type(config.selectors.login.captchaInput, captchaText);
 
     console.log('Clicking the login button');

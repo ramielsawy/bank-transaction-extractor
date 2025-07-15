@@ -56,7 +56,24 @@ npm install bank-transaction-extractor
 
 ## Environment Variables
 
+Create a `.env` file in your project root with the required variables. Here are the key environment variables you need to set:
+
+### Required Variables
+- `BANK_BASE_URL` - Your bank's base URL
+- `BANK_LOGIN_USERNAME_SELECTOR` - CSS selector for username input
+- `BANK_LOGIN_PASSWORD_SELECTOR` - CSS selector for password input
+- `BANK_LOGIN_CONTINUE_BUTTON` - CSS selector for login button
+- `BANK_LOGIN_CAPTCHA_INPUT` - CSS selector for CAPTCHA input field
+- `BANK_LOGIN_CAPTCHA_IMAGE` - CSS selector for CAPTCHA image
+- `BANK_DOWNLOAD_PATH` - Path where downloaded files will be stored
+- And other bank-specific selectors...
+
 Create a `.env` file in your project root with the required variables. You can find a template with all required variables in the `.env.example` file.
+### Example .env file:
+```
+BANK_BASE_URL=https://your-bank-url.com
+BANK_DOWNLOAD_PATH=./downloads
+```
 
 ## Usage
 

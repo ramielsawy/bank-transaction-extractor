@@ -18,10 +18,16 @@ declare global {
       BANK_EXPORT_CONFIRM_BUTTON_PREFIX: string;
       BANK_ALREADY_LOGGED_IN_MESSAGE: string;
       BANK_ALREADY_LOGGED_IN_CONTINUE: string;
+      BANK_ALREADY_LOGGED_IN_POPUP: string;
+      BANK_ALREADY_LOGGED_IN_ACTION_BUTTON: string;
+      BANK_ACCOUNTS_BUTTON: string;
+      BANK_ACCOUNTS_LIST_CONTAINER: string;
+      BANK_ACCOUNT_CARD: string;
+      BANK_ACCOUNT_NUMBER: string;
       BANK_DOWNLOAD_PATH: string;
       BANK_MAX_LOGIN_ATTEMPTS: string;
       BANK_MAX_CAPTCHA_ATTEMPTS: string;
-      OPENAI_API_KEY: string;
+      GEMINI_API_KEY: string;
     }
   }
 }

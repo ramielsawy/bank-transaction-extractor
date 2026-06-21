@@ -42,7 +42,7 @@ This library is compatible with online banking portals that:
 
 ## Features
 
-- Automated login with CAPTCHA solving using OpenAI Vision API
+- Automated login with CAPTCHA solving using Google Gemini Vision API
 - Transaction extraction for specified accounts
 - Multi-currency support with conversion
 - TypeScript support
@@ -65,6 +65,10 @@ Create a `.env` file in your project root with the required variables. Here are 
 - `BANK_LOGIN_CONTINUE_BUTTON` - CSS selector for login button
 - `BANK_LOGIN_CAPTCHA_INPUT` - CSS selector for CAPTCHA input field
 - `BANK_LOGIN_CAPTCHA_IMAGE` - CSS selector for CAPTCHA image
+- `BANK_ACCOUNTS_BUTTON` - CSS selector for the accounts button
+- `BANK_ACCOUNTS_LIST_CONTAINER` - CSS selector for the accounts list container
+- `BANK_ACCOUNT_CARD` - CSS selector for individual account cards
+- `BANK_ACCOUNT_NUMBER` - CSS selector for account number within cards
 - `BANK_DOWNLOAD_PATH` - Path where downloaded files will be stored
 - And other bank-specific selectors...
 
@@ -73,7 +77,7 @@ Create a `.env` file in your project root with the required variables. You can f
 ```
 BANK_BASE_URL=https://your-bank-url.com
 BANK_DOWNLOAD_PATH=./downloads
-OPENAI_API_KEY=sk-your-openai-api-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
 ```
 
 ## Usage
@@ -92,6 +96,51 @@ async function main() {
     });
     
     console.log('Transactions:', transactions);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+```
+
+### Get All Account Numbers
+
+```typescript
+import { getAllAccountNumbers } from 'bank-transaction-extractor';
+
+async function main() {
+  try {
+    const accountNumbers = await getAllAccountNumbers(
+      'your-username',
+      'your-password'
+    );
+    
+    console.log('Account Numbers:', accountNumbers);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+```
+
+### Get All Accounts Information
+
+```typescript
+import { getAllAccountsInfo, AccountInfo } from 'bank-transaction-extractor';
+
+async function main() {
+  try {
+    const accountsInfo: AccountInfo[] = await getAllAccountsInfo(
+      'your-username',
+      'your-password'
+    );
+    
+    console.log('Accounts Information:', accountsInfo);
+    
+    // Each account info contains:
+    // - accountNumber: string
+    // - accountName: string
+    // - currency: Currency
+    // - balance: number
+    // - status: string
   } catch (error) {
     console.error('Error:', error);
   }

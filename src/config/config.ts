@@ -18,6 +18,8 @@ export interface Config {
       captchaRefresh: string;
       alreadyLoggedInMessage: string;
       alreadyLoggedInContinue: string;
+      alreadyLoggedInPopup: string;
+      alreadyLoggedInActionButton: string;
     };
     account: {
       detailsContainer: string;
@@ -28,6 +30,12 @@ export interface Config {
       exportButton: string;
       exportActionButtonPrefix: string;
       exportConfirmButtonPrefix: string;
+    };
+    accounts: {
+      button: string;
+      listContainer: string;
+      accountCard: string;
+      accountNumber: string;
     };
   };
 }
@@ -45,8 +53,10 @@ export const config: Config = {
       captchaInput: process.env.BANK_LOGIN_CAPTCHA_INPUT,
       captchaImage: process.env.BANK_LOGIN_CAPTCHA_IMAGE,
       captchaRefresh: process.env.BANK_LOGIN_CAPTCHA_REFRESH,
-      alreadyLoggedInMessage: process.env.BANK_ALREADY_LOGGED_IN_MESSAGE,
-      alreadyLoggedInContinue: process.env.BANK_ALREADY_LOGGED_IN_CONTINUE,
+      alreadyLoggedInMessage: process.env.BANK_ALREADY_LOGGED_IN_MESSAGE || '',
+      alreadyLoggedInContinue: process.env.BANK_ALREADY_LOGGED_IN_CONTINUE || '',
+      alreadyLoggedInPopup: process.env.BANK_ALREADY_LOGGED_IN_POPUP || '[data-testid="already-logged-in-message"]',
+      alreadyLoggedInActionButton: process.env.BANK_ALREADY_LOGGED_IN_ACTION_BUTTON || '[data-testid="already-logged-in-action-button"]',
     },
     account: {
       detailsContainer: process.env.BANK_ACCOUNT_DETAILS_CONTAINER,
@@ -57,6 +67,12 @@ export const config: Config = {
       exportButton: process.env.BANK_EXPORT_BUTTON,
       exportActionButtonPrefix: process.env.BANK_EXPORT_ACTION_BUTTON_PREFIX,
       exportConfirmButtonPrefix: process.env.BANK_EXPORT_CONFIRM_BUTTON_PREFIX,
+    },
+    accounts: {
+      button: process.env.BANK_ACCOUNTS_BUTTON || '',
+      listContainer: process.env.BANK_ACCOUNTS_LIST_CONTAINER || '',
+      accountCard: process.env.BANK_ACCOUNT_CARD || '',
+      accountNumber: process.env.BANK_ACCOUNT_NUMBER || '',
     }
   }
 } as const;

@@ -1,6 +1,7 @@
 import { Page } from 'puppeteer';
 import { config, Config } from '../config/config';
 import { Currency } from '../enums/Currency';
+import { AccountInfo } from '../types/AccountInfo';
 import { getDownloadedFileContent } from './FileService';
 import { unlink } from 'fs/promises';
 
@@ -8,6 +9,181 @@ interface AccountDetails {
     elementId: string;
     currency: Currency;
     balance: number;
+}
+
+/**
+ * Navigate to the accounts page by clicking the accounts button
+ * @param page - The Puppeteer page instance
+ */
+export async function navigateToAccountsPage(page: Page): Promise<void> {
+    console.log('Navigating to accounts page...');
+    
+    // Wait for the page to fully load after login
+    await page.waitForTimeout(5000);
+    
+    // Take a screenshot for debugging
+    await page.screenshot({ path: 'after-login.png' });
+    console.log('Screenshot saved as after-login.png');
+    
+    // Try to find any element with "accounts" in the data-testid
+    const accountsElements = await page.$$('[data-testid*="accounts"]');
+    console.log(`Found ${accountsElements.length} elements with "accounts" in data-testid`);
+    
+    // Log all elements with data-testid containing "accounts"
+    for (let i = 0; i < accountsElements.length; i++) {
+        const element = accountsElements[i];
+        const testId = await element.evaluate(el => el.getAttribute('data-testid'));
+        const isVisible = await element.isIntersectingViewport();
+        console.log(`  Element ${i + 1}: data-testid="${testId}", visible: ${isVisible}`);
+    }
+    
+    // Try different possible selectors for the accounts button
+    const possibleSelectors = [
+        '[data-testid="accounts-pressable"]',
+        '[data-testid*="accounts"]',
+        'div[data-testid*="accounts"]',
+        '[aria-label*="Accounts"]',
+        '[aria-label*="accounts"]'
+    ];
+    
+    let accountsButton = null;
+    let usedSelector = '';
+    
+    for (const selector of possibleSelectors) {
+        console.log(`Trying selector: ${selector}`);
+        try {
+            await page.waitForSelector(selector, { visible: true, timeout: 5000 });
+            accountsButton = await page.$(selector);
+            if (accountsButton) {
+                usedSelector = selector;
+                console.log(`Found accounts button with selector: ${selector}`);
+                break;
+            }
+        } catch (error) {
+            console.log(`Selector ${selector} not found or not visible`);
+        }
+    }
+    
+    if (!accountsButton) {
+        // Log the current page content for debugging
+        const pageContent = await page.content();
+        console.log('Page content length:', pageContent.length);
+        
+        // Save page content to file for debugging
+        require('fs').writeFileSync('page-after-login.html', pageContent);
+        console.log('Page content saved to page-after-login.html');
+        
+        throw new Error(`Accounts button not found. Tried selectors: ${possibleSelectors.join(', ')}`);
+    }
+    
+    // Click the accounts button
+    await accountsButton.click();
+    console.log(`Clicked accounts button using selector: ${usedSelector}`);
+    
+    // Wait for navigation to complete
+    await page.waitForTimeout(3000);
+    
+    // Take another screenshot after clicking
+    await page.screenshot({ path: 'after-accounts-click.png' });
+    console.log('Screenshot saved as after-accounts-click.png');
+    
+    // Wait for the accounts list container to be visible
+    try {
+        await page.waitForSelector(config.selectors.accounts.listContainer, { visible: true, timeout: 10000 });
+        console.log('Accounts page loaded successfully');
+    } catch (error) {
+        console.log('Accounts list container not found, but continuing...');
+        // Don't throw error here, let the subsequent functions handle it
+    }
+}
+
+/**
+ * Extract all account numbers from the accounts list page
+ * @param page - The Puppeteer page instance
+ * @returns Array of account numbers
+ */
+export async function getAccountNumbers(page: Page): Promise<string[]> {
+    console.log('Extracting account numbers from accounts page...');
+    
+    // Wait for account cards to be visible
+    await page.waitForSelector(config.selectors.accounts.accountCard, { visible: true });
+    
+    // Extract all account numbers
+    const accountNumbers = await page.evaluate((selectors) => {
+        const accountCards = document.querySelectorAll(selectors.accountCard);
+        const numbers: string[] = [];
+        
+        accountCards.forEach((card) => {
+            const accountNumberElement = card.querySelector(selectors.accountNumber);
+            if (accountNumberElement) {
+                const accountNumber = accountNumberElement.textContent?.trim();
+                if (accountNumber) {
+                    numbers.push(accountNumber);
+                }
+            }
+        });
+        
+        return numbers;
+    }, config.selectors.accounts);
+    
+    console.log(`Found ${accountNumbers.length} accounts:`, accountNumbers);
+    return accountNumbers;
+}
+
+/**
+ * Extract detailed account information from the accounts list page
+ * @param page - The Puppeteer page instance
+ * @returns Array of account information objects
+ */
+export async function getAccountsInfo(page: Page): Promise<AccountInfo[]> {
+    console.log('Extracting detailed account information from accounts page...');
+    
+    // Wait for account cards to be visible
+    await page.waitForSelector(config.selectors.accounts.accountCard, { visible: true });
+    
+    // Extract detailed account information
+    const accountsInfo = await page.evaluate((selectors) => {
+        const accountCards = document.querySelectorAll(selectors.accountCard);
+        const accounts: AccountInfo[] = [];
+        
+        accountCards.forEach((card) => {
+            // Extract account number
+            const accountNumberElement = card.querySelector('[data-testid="account-number"]');
+            const accountNumber = accountNumberElement?.textContent?.trim() || '';
+            
+            // Extract account name
+            const accountNameElement = card.querySelector('[data-testid="account-name"]');
+            const accountName = accountNameElement?.textContent?.trim() || '';
+            
+            // Extract balance and currency
+            const balanceElement = card.querySelector('[data-testid="balance"]');
+            const balanceText = balanceElement?.textContent?.trim() || '';
+            
+            // Parse balance and currency (format: "‎496.75 EGP")
+            const balanceMatch = balanceText.match(/([0-9,]+\.?[0-9]*)\s+([A-Z]{3})/);
+            const balance = balanceMatch ? parseFloat(balanceMatch[1].replace(/,/g, '')) : 0;
+            const currency = balanceMatch ? balanceMatch[2] : 'EGP';
+            
+            // Extract status
+            const statusElement = card.querySelector('[data-testid="status-text"]');
+            const status = statusElement?.textContent?.trim() || '';
+            
+            if (accountNumber) {
+                accounts.push({
+                    accountNumber,
+                    accountName,
+                    currency: currency as Currency,
+                    balance,
+                    status
+                });
+            }
+        });
+        
+        return accounts;
+    }, config.selectors.accounts);
+    
+    console.log(`Found ${accountsInfo.length} accounts with details:`, accountsInfo);
+    return accountsInfo;
 }
 
 export async function getAccountDetails(

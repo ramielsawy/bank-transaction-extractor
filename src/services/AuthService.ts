@@ -15,37 +15,126 @@ export async function loginToBank(page: puppeteer.Page, username: string, passwo
 
     for (let attempt = 1; attempt <= config.maxLoginAttempts; attempt++) {
         console.log(`Login attempt ${attempt}`);
-        await attemptLogin(page, username, password);
-
-        await page.waitForTimeout(2000);
-        const pageContent = await page.content();
-
-        if (!pageContent.includes("The data you entered is invalid")) {
-            console.log('Login successful');
-
-            // Check for "already logged in" message and handle it
-            const alreadyLoggedIn = await page.evaluate((selector) => {
-                const message = document.querySelector(selector);
-                return message !== null;
-            }, config.selectors.login.alreadyLoggedInMessage);
-
-            if (alreadyLoggedIn) {
-                console.log('Already logged in message detected, clicking continue');
-                await page.click(config.selectors.login.alreadyLoggedInContinue);
-                await page.waitForTimeout(2000);
+        
+        try {
+            await attemptLogin(page, username, password);
+            
+            // Wait for the API response and check the result
+            await page.waitForTimeout(3000);
+            
+            // Check for API response in network requests
+            const apiResponse = await checkLoginApiResponse(page);
+            
+            if (apiResponse) {
+                if (apiResponse.statusCode === 200) {
+                    console.log('Login successful via API');
+                    result = LoginResult.Success;
+                    break;
+                } else if (apiResponse.statusCode === 428 && apiResponse.errorCode === 'AUTH-4') {
+                    console.log('Already logged in detected, handling popup...');
+                    await handleAlreadyLoggedInPopup(page);
+                    result = LoginResult.Success;
+                    break;
+                } else if (apiResponse.statusCode === 401 && apiResponse.errorCode === 'AUTH-0') {
+                    console.log('Invalid credentials detected from API');
+                    continue; // Try again
+                }
             }
-
-            result = LoginResult.Success;
-
-            break;
+            
+            // Fallback: Check page content for success indicators
+            const pageContent = await page.content();
+            if (!pageContent.includes("The data you entered is invalid") && 
+                !pageContent.includes("Invalid Login")) {
+                console.log('Login successful (fallback check)');
+                
+                // Check for the new "already logged in" popup structure
+                const alreadyLoggedInPopup = await page.$('[data-testid="already-logged-in-message"]');
+                if (alreadyLoggedInPopup) {
+                    console.log('Already logged in popup detected, handling...');
+                    await handleAlreadyLoggedInPopup(page);
+                }
+                
+                result = LoginResult.Success;
+                break;
+            }
+            
+            console.log('Invalid credentials or CAPTCHA');
+            
+        } catch (error) {
+            console.error(`Login attempt ${attempt} failed:`, error);
+            if (attempt === config.maxLoginAttempts) {
+                throw error;
+            }
         }
-        console.log('Invalid credentials or CAPTCHA');
     }
+    
     if (result !== LoginResult.Success) {
-        throw new Error('Failed to login');
+        throw new Error('Failed to login after all attempts');
     }
 
     return result;
+}
+
+async function checkLoginApiResponse(page: puppeteer.Page): Promise<any> {
+    try {
+        // Listen for network responses
+        return await page.evaluate(() => {
+            return new Promise((resolve) => {
+                // Check if there's any indication of the API response in the page
+                const errorElements = document.querySelectorAll('[data-testid*="error"], [data-testid*="message"]');
+                
+                // Look for specific error messages
+                for (let i = 0; i < errorElements.length; i++) {
+                    const element = errorElements[i];
+                    const text = element.textContent || '';
+                    if (text.includes('Invalid Login')) {
+                        resolve({ statusCode: 401, errorCode: 'AUTH-0' });
+                        return;
+                    }
+                    if (text.includes('already logged in') || text.includes('another device')) {
+                        resolve({ statusCode: 428, errorCode: 'AUTH-4' });
+                        return;
+                    }
+                }
+                
+                // Check for success indicators
+                const successElements = document.querySelectorAll('[data-testid*="accounts"], [data-testid*="dashboard"]');
+                if (successElements.length > 0) {
+                    resolve({ statusCode: 200 });
+                    return;
+                }
+                
+                resolve(null);
+            });
+        });
+    } catch (error) {
+        console.log('Could not check API response:', error);
+        return null;
+    }
+}
+
+async function handleAlreadyLoggedInPopup(page: puppeteer.Page): Promise<void> {
+    try {
+        // Wait for the popup to appear
+        await page.waitForSelector('[data-testid="already-logged-in-message"]', { timeout: 5000 });
+        console.log('Already logged in popup found');
+        
+        // Click the Continue button
+        const continueButton = await page.$('[data-testid="already-logged-in-action-button"]');
+        if (continueButton) {
+            await continueButton.click();
+            console.log('Clicked Continue button in already logged in popup');
+            await page.waitForTimeout(2000);
+        } else {
+            // Fallback: try the old selector
+            await page.click(config.selectors.login.alreadyLoggedInContinue);
+            console.log('Clicked Continue button using fallback selector');
+            await page.waitForTimeout(2000);
+        }
+    } catch (error) {
+        console.log('Could not handle already logged in popup:', error);
+        // Don't throw error, continue with login process
+    }
 }
 
 async function attemptLogin(page: puppeteer.Page, username: string, password: string) {
@@ -60,6 +149,14 @@ async function attemptLogin(page: puppeteer.Page, username: string, password: st
     console.log('Clicking the continue button');
     await page.click(config.selectors.login.continueButton);
     await page.waitForTimeout(2000);
+    
+    // Check if CAPTCHA is required
+    const captchaImage = await page.$(config.selectors.login.captchaImage);
+    if (!captchaImage) {
+        console.log('No CAPTCHA required, proceeding with login');
+        return;
+    }
+    
     console.log('CAPTCHA image loaded');
 
     let captchaText = '';
@@ -70,7 +167,9 @@ async function attemptLogin(page: puppeteer.Page, username: string, password: st
             break;
         } catch (error) {
             console.error('Error solving CAPTCHA:', error);
-            await refreshCaptcha(page);
+            if (attempt < config.maxCaptchaAttempts) {
+                await refreshCaptcha(page);
+            }
         }
     }
     if (!captchaText) {
@@ -90,16 +189,50 @@ async function attemptLogin(page: puppeteer.Page, username: string, password: st
     await page.type(config.selectors.login.captchaInput, captchaText);
 
     console.log('Clicking the login button');
-    await page.evaluate((selector) => {
-        const buttons = document.querySelectorAll(selector);
-        if (buttons.length >= 2) {
-            (buttons[1] as HTMLElement).click();
-        } else {
-            console.error('Login button not found');
-        }
-    }, config.selectors.login.continueButton);
+    
+    // Try to find and click the login button more reliably
+    const loginButtons = await page.$$(config.selectors.login.continueButton);
+    if (loginButtons.length >= 2) {
+        await loginButtons[1].click();
+        console.log('Clicked login button (second instance)');
+    } else if (loginButtons.length === 1) {
+        await loginButtons[0].click();
+        console.log('Clicked login button (first instance)');
+    } else {
+        throw new Error('Login button not found');
+    }
 
-    await page.waitForTimeout(5000);
+    // Wait longer for the login to process
+    console.log('Waiting for login to process...');
+    await page.waitForTimeout(10000);
+    
+    // Check if we're still on the login page
+    const loginTemplate = await page.$('[data-testid="loginTemplate"]');
+    if (loginTemplate) {
+        console.log('Still on login page, checking for errors...');
+        
+        // Look for error messages
+        const errorMessages = await page.$$eval('[data-testid*="error"], [class*="error"], [class*="invalid"]', 
+            elements => elements.map(el => el.textContent).filter(text => text && text.trim().length > 0)
+        );
+        
+        if (errorMessages.length > 0) {
+            console.log('Found error messages:', errorMessages);
+            throw new Error(`Login failed: ${errorMessages.join(', ')}`);
+        }
+        
+        // Check if CAPTCHA is wrong
+        const captchaInput = await page.$(config.selectors.login.captchaInput);
+        if (captchaInput) {
+            const captchaValue = await captchaInput.evaluate(el => (el as HTMLInputElement).value);
+            if (captchaValue === captchaText) {
+                console.log('CAPTCHA appears to be wrong, will retry');
+                throw new Error('CAPTCHA appears to be incorrect');
+            }
+        }
+    } else {
+        console.log('Successfully left login page');
+    }
 }
 
 async function getCaptchaImage(page: puppeteer.Page): Promise<string> {

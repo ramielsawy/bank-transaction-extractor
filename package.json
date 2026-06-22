@@ -7,7 +7,9 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "jest tests"
+    "test": "jest tests",
+    "statement": "npx ts-node examples/get-statement.ts",
+    "accounts": "npx ts-node examples/get-accounts.ts"
   },
   "keywords": [
     "csv",

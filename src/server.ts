@@ -4,7 +4,9 @@ import dotenv from 'dotenv';
 import { getTransactions } from './index';
 import {
   buildStatementFilename,
+  buildStatementResponse,
   isValidAccountNumber,
+  resolveStatementFormat,
   transactionsToCsv,
 } from './services/StatementService';
 import { isSupportedBankId, listSupportedBankIds } from './providers';
@@ -77,7 +79,8 @@ async function handleStatement(
   body: StatementRequest,
   searchParams: URLSearchParams
 ): Promise<void> {
-  const { bankId, username, password, accountNumber } = resolveStatementParams(body, searchParams);
+  const { bankId, username, password, accountNumber } =
+    resolveStatementParams(body, searchParams);
 
   if (!bankId) {
     sendJson(res, 400, {
@@ -109,8 +112,21 @@ async function handleStatement(
     return;
   }
 
+  const format = resolveStatementFormat(req.headers.accept);
+
   console.log(`Fetching statement for bank ${bankId}, account ${accountNumber}...`);
   const transactions = await getTransactions(username, password, accountNumber, undefined, undefined, bankId);
+
+  if (format === 'json') {
+    sendJson(
+      res,
+      200,
+      buildStatementResponse(bankId, accountNumber, transactions)
+    );
+    console.log(`Returned ${transactions.length} transactions as JSON for account ${accountNumber}`);
+    return;
+  }
+
   const csv = transactionsToCsv(transactions);
   const filename = buildStatementFilename(accountNumber);
 
@@ -154,7 +170,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Bank statement API listening on port ${PORT}`);
   console.log(`  GET  /health`);
-  console.log(`  POST /api/statement`);
+  console.log(`  POST /api/statement  (default → JSON, Accept: text/csv → CSV file)`);
   console.log(`  GET  /api/statement?bankId=cib&accountNumber=...`);
   console.log(`  Supported banks: ${listSupportedBankIds().join(', ')}`);
   if (API_KEY) {

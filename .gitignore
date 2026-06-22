@@ -29,6 +29,10 @@ yarn-error.log
 .env
 .env.local
 .env.*.local
+gcp-deploy-sa-key.json
+gcp-appspot-sa-key.json
+cloud-run-env.yaml
+.api-key-once.txt
 
 # TypeScript cache
 *.tsbuildinfo

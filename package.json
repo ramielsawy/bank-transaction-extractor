@@ -6,6 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "start": "node dist/server.js",
     "prepublishOnly": "npm run build",
     "test": "jest tests",
     "statement": "npx ts-node examples/get-statement.ts",

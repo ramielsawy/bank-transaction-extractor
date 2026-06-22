@@ -28,6 +28,10 @@ declare global {
       GEMINI_API_KEY: string;
       API_PORT: string;
       API_KEY: string;
+      PORT: string;
+      NODE_ENV: string;
+      PUPPETEER_EXECUTABLE_PATH: string;
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: string;
       BANK_USERNAME: string;
       BANK_PASSWORD: string;
     }

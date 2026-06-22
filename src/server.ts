@@ -6,7 +6,7 @@ import { isValidAccountNumber, transactionsToCsv } from './services/StatementSer
 
 dotenv.config();
 
-const PORT = Number(process.env.API_PORT) || 3000;
+const PORT = Number(process.env.PORT || process.env.API_PORT) || 3000;
 const API_KEY = process.env.API_KEY;
 
 interface StatementRequest {
@@ -124,8 +124,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`Bank statement API listening on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Bank statement API listening on port ${PORT}`);
   console.log(`  GET  /health`);
   console.log(`  POST /api/statement`);
   console.log(`  GET  /api/statement?accountNumber=...`);

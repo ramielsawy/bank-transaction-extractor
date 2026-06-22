@@ -6,6 +6,7 @@ import { AccountInfo } from './types/AccountInfo';
 import { CsvRow } from './types/CsvRow';
 
 import { config, validateConfig } from './config/config';
+import { getBrowserLaunchOptions } from './config/browser';
 
 import { getAccountDetails, extractTransactionsFromAccount, navigateToAccountsPage, getAccountNumbers, getAccountsInfo } from './services/AccountService';
 import { loginToBank } from './services/AuthService';
@@ -18,11 +19,6 @@ export { Transaction } from './types/Transaction';
 export { AccountInfo } from './types/AccountInfo';
 export { navigateToAccountsPage, getAccountNumbers, getAccountsInfo } from './services/AccountService';
 
-const browserLaunchOptions = {
-  ignoreHTTPSErrors: true,
-  args: ['--no-sandbox', '--ignore-certificate-errors'],
-};
-
 /**
  * Get transactions from a bank account
  */
@@ -34,7 +30,7 @@ export async function getTransactions(
   exchangeRate?: number
 ): Promise<Transaction[]> {
   validateConfig();
-  const browser = await puppeteer.launch(browserLaunchOptions as puppeteer.LaunchOptions);
+  const browser = await puppeteer.launch(getBrowserLaunchOptions());
   const page = await browser.newPage();
   await page.setDefaultNavigationTimeout(120000);
 
@@ -71,11 +67,10 @@ export async function getAllAccountNumbers(
   password: string
 ): Promise<string[]> {
   validateConfig();
-  const browser = await puppeteer.launch({
-    ...(browserLaunchOptions as puppeteer.LaunchOptions),
+  const browser = await puppeteer.launch(getBrowserLaunchOptions({
     headless: false,
     defaultViewport: null,
-  });
+  }));
   const page = await browser.newPage();
   await page.setDefaultNavigationTimeout(120000);
 
@@ -96,7 +91,7 @@ export async function getAllAccountsInfo(
   password: string
 ): Promise<AccountInfo[]> {
   validateConfig();
-  const browser = await puppeteer.launch(browserLaunchOptions as puppeteer.LaunchOptions);
+  const browser = await puppeteer.launch(getBrowserLaunchOptions());
   const page = await browser.newPage();
   await page.setDefaultNavigationTimeout(120000);
 

@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
-import { stringify } from 'csv-stringify/sync';
 import { getTransactions } from '../src/index';
+import { isValidAccountNumber, transactionsToCsv } from '../src/services/StatementService';
 
 dotenv.config();
 
@@ -22,11 +22,17 @@ async function main() {
     process.exit(1);
   }
 
+  if (!isValidAccountNumber(accountNumber)) {
+    console.error('BANK_ACCOUNT_NUMBER must be your account number (e.g. 100037773586), not a CSS selector.');
+    console.error('Use BANK_ACCOUNT_NUMBER_SELECTOR in .env for the page selector.');
+    process.exit(1);
+  }
+
   try {
     console.log(`Fetching transactions for account ${accountNumber}...`);
     const transactions = await getTransactions(username, password, accountNumber);
 
-    const csv = stringify(transactions, { header: true });
+    const csv = transactionsToCsv(transactions);
     const resolvedPath = path.resolve(outputPath);
     fs.writeFileSync(resolvedPath, csv);
 

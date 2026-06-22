@@ -38,18 +38,18 @@ export interface Config {
 }
 
 export const config = {
-  baseUrl: process.env.BANK_BASE_URL ?? '',
-  downloadPath: process.env.BANK_DOWNLOAD_PATH ?? '',
+  baseUrl: process.env.BANK_BASE_URL || 'https://digitalinternetbanking.cibeg.com/login',
+  downloadPath: process.env.BANK_DOWNLOAD_PATH || '/tmp/downloads',
   maxLoginAttempts: Number(process.env.BANK_MAX_LOGIN_ATTEMPTS) || 3,
-  maxCaptchaAttempts: Number(process.env.BANK_MAX_CAPTCHA_ATTEMPTS) || 3,
+  maxCaptchaAttempts: Number(process.env.BANK_MAX_CAPTCHA_ATTEMPTS) || 10,
   selectors: {
     login: {
-      username: process.env.BANK_LOGIN_USERNAME_SELECTOR ?? '',
-      password: process.env.BANK_LOGIN_PASSWORD_SELECTOR ?? '',
-      continueButton: process.env.BANK_LOGIN_CONTINUE_BUTTON ?? '',
-      captchaInput: process.env.BANK_LOGIN_CAPTCHA_INPUT ?? '',
-      captchaImage: process.env.BANK_LOGIN_CAPTCHA_IMAGE ?? '',
-      captchaRefresh: process.env.BANK_LOGIN_CAPTCHA_REFRESH ?? '',
+      username: process.env.BANK_LOGIN_USERNAME_SELECTOR || '[data-testid="Username-input"]',
+      password: process.env.BANK_LOGIN_PASSWORD_SELECTOR || '[data-testid="Password-input"]',
+      continueButton: process.env.BANK_LOGIN_CONTINUE_BUTTON || '[data-testid="cib-loginButton"]',
+      captchaInput: process.env.BANK_LOGIN_CAPTCHA_INPUT || '[data-testid="undefined-input"], [data-testid="captcha-input"]',
+      captchaImage: process.env.BANK_LOGIN_CAPTCHA_IMAGE || '[data-testid="captcha-image"]',
+      captchaRefresh: process.env.BANK_LOGIN_CAPTCHA_REFRESH || 'div[tabindex="0"] svg[data-testid="icon"]',
       alreadyLoggedInPopup: process.env.BANK_ALREADY_LOGGED_IN_POPUP || '[data-testid="already-logged-in-message"]',
       alreadyLoggedInActionButton: process.env.BANK_ALREADY_LOGGED_IN_ACTION_BUTTON || '[data-testid="already-logged-in-action-button"]',
     },
@@ -73,10 +73,7 @@ export const config = {
 } satisfies Config;
 
 export function validateConfig() {
-  const requiredEnvVars = Object.keys(config);
-  const missingVars = requiredEnvVars.filter(key => !config[key as keyof typeof config]);
-
-  if (missingVars.length > 0) {
-    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('Missing required environment variable: GEMINI_API_KEY');
   }
 }

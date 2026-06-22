@@ -1,23 +1,28 @@
-import puppeteer from 'puppeteer';
-
 import { Currency } from './enums/Currency';
 import { Transaction } from './types/Transaction';
 import { AccountInfo } from './types/AccountInfo';
-import { CsvRow } from './types/CsvRow';
-
-import { config, validateConfig } from './config/config';
-import { getBrowserLaunchOptions } from './config/browser';
-
-import { getAccountDetails, extractTransactionsFromAccount, navigateToAccountsPage, getAccountNumbers, getAccountsInfo } from './services/AccountService';
-import { loginToBank } from './services/AuthService';
-import { convertCurrency } from './services/CurrencyService';
-import { parseCsvContent } from './services/FileService';
-import { convertToTransactions } from './services/TransactionService';
+import { resolveBankProvider } from './providers';
 
 export { Currency } from './enums/Currency';
 export { Transaction } from './types/Transaction';
 export { AccountInfo } from './types/AccountInfo';
-export { navigateToAccountsPage, getAccountNumbers, getAccountsInfo } from './services/AccountService';
+export {
+  navigateToAccountsPage,
+  getAccountNumbers,
+  getAccountsInfo,
+} from './services/AccountService';
+export {
+  listSupportedBankIds,
+  isSupportedBankId,
+  resolveBankProvider,
+  UnknownBankError,
+} from './providers';
+
+const DEFAULT_BANK_ID = 'cib';
+
+function resolveBankId(bankId?: string): string {
+  return (bankId || process.env.BANK_ID || DEFAULT_BANK_ID).toLowerCase();
+}
 
 /**
  * Get transactions from a bank account
@@ -27,36 +32,11 @@ export async function getTransactions(
   password: string,
   accountNumber: string,
   targetCurrency?: Currency,
-  exchangeRate?: number
+  exchangeRate?: number,
+  bankId?: string
 ): Promise<Transaction[]> {
-  validateConfig();
-  const browser = await puppeteer.launch(getBrowserLaunchOptions());
-  const page = await browser.newPage();
-  await page.setDefaultNavigationTimeout(120000);
-
-  try {
-    await loginToBank(page, username, password);
-    await navigateToAccountsPage(page);
-
-    const accountDetails = await getAccountDetails(accountNumber, page);
-    const sourceCurrency = accountDetails.currency;
-    if (!targetCurrency) {
-      targetCurrency = sourceCurrency;
-    }
-
-    const fileContent = await extractTransactionsFromAccount(page, accountNumber);
-    const csvRows: CsvRow[] = await parseCsvContent(fileContent);
-
-    let transactions = convertToTransactions(csvRows, sourceCurrency);
-
-    if (sourceCurrency && targetCurrency && sourceCurrency !== targetCurrency && !!exchangeRate) {
-      transactions = convertCurrency(transactions, sourceCurrency, targetCurrency, exchangeRate);
-    }
-
-    return transactions;
-  } finally {
-    await browser.close();
-  }
+  const provider = resolveBankProvider(resolveBankId(bankId));
+  return provider.getTransactions(username, password, accountNumber, targetCurrency, exchangeRate);
 }
 
 /**
@@ -64,23 +44,11 @@ export async function getTransactions(
  */
 export async function getAllAccountNumbers(
   username: string,
-  password: string
+  password: string,
+  bankId?: string
 ): Promise<string[]> {
-  validateConfig();
-  const browser = await puppeteer.launch(getBrowserLaunchOptions({
-    headless: false,
-    defaultViewport: null,
-  }));
-  const page = await browser.newPage();
-  await page.setDefaultNavigationTimeout(120000);
-
-  try {
-    await loginToBank(page, username, password);
-    await navigateToAccountsPage(page);
-    return await getAccountNumbers(page);
-  } finally {
-    await browser.close();
-  }
+  const provider = resolveBankProvider(resolveBankId(bankId));
+  return provider.getAllAccountNumbers(username, password);
 }
 
 /**
@@ -88,18 +56,9 @@ export async function getAllAccountNumbers(
  */
 export async function getAllAccountsInfo(
   username: string,
-  password: string
+  password: string,
+  bankId?: string
 ): Promise<AccountInfo[]> {
-  validateConfig();
-  const browser = await puppeteer.launch(getBrowserLaunchOptions());
-  const page = await browser.newPage();
-  await page.setDefaultNavigationTimeout(120000);
-
-  try {
-    await loginToBank(page, username, password);
-    await navigateToAccountsPage(page);
-    return await getAccountsInfo(page);
-  } finally {
-    await browser.close();
-  }
+  const provider = resolveBankProvider(resolveBankId(bankId));
+  return provider.getAllAccountsInfo(username, password);
 }

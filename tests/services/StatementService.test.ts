@@ -1,4 +1,4 @@
-import { isValidAccountNumber, transactionsToCsv } from '../../src/services/StatementService';
+import { buildStatementFilename, isValidAccountNumber, transactionsToCsv } from '../../src/services/StatementService';
 import { Currency } from '../../src/enums/Currency';
 
 describe('StatementService', () => {
@@ -23,5 +23,10 @@ describe('StatementService', () => {
   it('rejects selector-like account numbers', () => {
     expect(isValidAccountNumber('100037773586')).toBe(true);
     expect(isValidAccountNumber('[data-testid="account-number"]')).toBe(false);
+  });
+
+  it('builds timestamped statement filenames', () => {
+    const filename = buildStatementFilename('100037773586', new Date('2026-06-22T15:04:00'));
+    expect(filename).toBe('2026-06-22-15-04-statement-100037773586.csv');
   });
 });

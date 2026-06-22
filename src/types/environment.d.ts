@@ -12,6 +12,7 @@ declare global {
       BANK_ALREADY_LOGGED_IN_ACTION_BUTTON: string;
       BANK_ACCOUNTS_BUTTON: string;
       BANK_ACCOUNT_CARD: string;
+      BANK_ACCOUNT_NUMBER_SELECTOR: string;
       BANK_ACCOUNT_NUMBER: string;
       BANK_ACCOUNT_PRESSABLE_SUFFIX: string;
       BANK_ACCOUNT_NAME: string;
@@ -25,6 +26,10 @@ declare global {
       BANK_MAX_LOGIN_ATTEMPTS: string;
       BANK_MAX_CAPTCHA_ATTEMPTS: string;
       GEMINI_API_KEY: string;
+      API_PORT: string;
+      API_KEY: string;
+      BANK_USERNAME: string;
+      BANK_PASSWORD: string;
     }
   }
 }

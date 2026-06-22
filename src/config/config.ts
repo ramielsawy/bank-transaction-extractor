@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
 
 export interface Config {
@@ -16,24 +15,22 @@ export interface Config {
       captchaInput: string;
       captchaImage: string;
       captchaRefresh: string;
-      alreadyLoggedInMessage: string;
-      alreadyLoggedInContinue: string;
       alreadyLoggedInPopup: string;
       alreadyLoggedInActionButton: string;
     };
     account: {
-      detailsContainer: string;
-      numberValue: string;
-      nativeBalance: string;
-      clickPrefix: string;
-      viewMoreButtonPrefix: string;
-      exportButton: string;
-      exportActionButtonPrefix: string;
-      exportConfirmButtonPrefix: string;
+      pressableSuffix: string;
+      number: string;
+      name: string;
+      balance: string;
+      status: string;
+      viewAllButton: string;
+      downloadButton: string;
+      exportCsvOption: string;
+      exportConfirmButton: string;
     };
     accounts: {
       button: string;
-      listContainer: string;
       accountCard: string;
       accountNumber: string;
     };
@@ -53,28 +50,26 @@ export const config: Config = {
       captchaInput: process.env.BANK_LOGIN_CAPTCHA_INPUT,
       captchaImage: process.env.BANK_LOGIN_CAPTCHA_IMAGE,
       captchaRefresh: process.env.BANK_LOGIN_CAPTCHA_REFRESH,
-      alreadyLoggedInMessage: process.env.BANK_ALREADY_LOGGED_IN_MESSAGE || '',
-      alreadyLoggedInContinue: process.env.BANK_ALREADY_LOGGED_IN_CONTINUE || '',
       alreadyLoggedInPopup: process.env.BANK_ALREADY_LOGGED_IN_POPUP || '[data-testid="already-logged-in-message"]',
       alreadyLoggedInActionButton: process.env.BANK_ALREADY_LOGGED_IN_ACTION_BUTTON || '[data-testid="already-logged-in-action-button"]',
     },
     account: {
-      detailsContainer: process.env.BANK_ACCOUNT_DETAILS_CONTAINER,
-      numberValue: process.env.BANK_ACCOUNT_NUMBER_VALUE,
-      nativeBalance: process.env.BANK_ACCOUNT_NATIVE_BALANCE,
-      clickPrefix: process.env.BANK_ACCOUNT_CLICK_PREFIX,
-      viewMoreButtonPrefix: process.env.BANK_VIEW_MORE_BUTTON_PREFIX,
-      exportButton: process.env.BANK_EXPORT_BUTTON,
-      exportActionButtonPrefix: process.env.BANK_EXPORT_ACTION_BUTTON_PREFIX,
-      exportConfirmButtonPrefix: process.env.BANK_EXPORT_CONFIRM_BUTTON_PREFIX,
+      pressableSuffix: process.env.BANK_ACCOUNT_PRESSABLE_SUFFIX || '-pressable',
+      number: process.env.BANK_ACCOUNT_NUMBER || '[data-testid="account-number"]',
+      name: process.env.BANK_ACCOUNT_NAME || '[data-testid="account-name"]',
+      balance: process.env.BANK_ACCOUNT_BALANCE || '[data-testid="balance"]',
+      status: process.env.BANK_ACCOUNT_STATUS || '[data-testid="status-text"]',
+      viewAllButton: process.env.BANK_VIEW_ALL_BUTTON || '[data-testid="view-all-button-button"]',
+      downloadButton: process.env.BANK_DOWNLOAD_BUTTON || '[data-testid="download-button"]',
+      exportCsvOption: process.env.BANK_EXPORT_CSV_OPTION || '[data-testid="CSV (Spreadsheet)-RadioBox"]',
+      exportConfirmButton: process.env.BANK_EXPORT_CONFIRM_BUTTON || '[data-testid="transaction-type-button"]',
     },
     accounts: {
-      button: process.env.BANK_ACCOUNTS_BUTTON || '',
-      listContainer: process.env.BANK_ACCOUNTS_LIST_CONTAINER || '',
-      accountCard: process.env.BANK_ACCOUNT_CARD || '',
-      accountNumber: process.env.BANK_ACCOUNT_NUMBER || '',
-    }
-  }
+      button: process.env.BANK_ACCOUNTS_BUTTON || '[data-testid="accounts-pressable"]',
+      accountCard: process.env.BANK_ACCOUNT_CARD || '[data-testid$="-pressable"]:not([data-testid="accounts-pressable"])',
+      accountNumber: process.env.BANK_ACCOUNT_NUMBER || '[data-testid="account-number"]',
+    },
+  },
 } as const;
 
 export function validateConfig() {

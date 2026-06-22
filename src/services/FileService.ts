@@ -1,39 +1,29 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { parse } from 'csv-parse/sync';
 import { CsvRow } from '../types/CsvRow';
-import { config } from '../config/config';
 import { Page } from 'puppeteer';
 
-export async function getDownloadedFileContent(page: Page): Promise<string> {
-    // Set up download behavior
-    const client = await page.target().createCDPSession();
-    await client.send('Page.setDownloadBehavior', {
-        behavior: 'allow',
-        downloadPath: config.downloadPath
-    });
-    let fileFound = false;
-    let attempts = 0;
-    const downloadWaitTime = 30; // 30 seconds total wait time
+export async function waitForCsvApiResponse(page: Page): Promise<string> {
+  const response = await page.waitForResponse(
+    (res) => res.url().includes('/v1/transfers') && res.url().includes('format=csv') && res.status() === 200,
+    { timeout: 60000 }
+  );
 
-    while (!fileFound && attempts < downloadWaitTime) {
-        const files = await fs.readdir(config.downloadPath);
-        if (files.length > 0 && !files[0].endsWith('.crdownload')) {
-            fileFound = true;
-            console.log(`Download completed: ${files[0]}`);
-            const filePath = path.join(config.downloadPath, files[0]);
-            const fileContent = await fs.readFile(filePath, 'utf8');
-            await fs.unlink(filePath);
-            return fileContent;
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-        attempts++;
-    }
-    throw new Error(`Download failed after ${downloadWaitTime} seconds`);
+  const json = await response.json();
+  if (!json.data) {
+    throw new Error('CSV data not found in API response');
+  }
+
+  return Buffer.from(json.data, 'base64').toString('utf8');
 }
 
 export async function parseCsvContent(fileContent: string): Promise<CsvRow[]> {
-    return parse(fileContent, {
-        columns: true,
-    });
+  const normalizedContent = fileContent.replace(/^\uFEFF/, '');
+  const lines = normalizedContent.split('\n');
+  const headerIndex = lines.findIndex((line) => line.startsWith('Date,'));
+  const csvData = headerIndex >= 0 ? lines.slice(headerIndex).join('\n') : normalizedContent;
+
+  return parse(csvData, {
+    columns: true,
+    skip_empty_lines: true,
+  });
 }

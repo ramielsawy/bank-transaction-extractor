@@ -1,35 +1,30 @@
 import puppeteer from 'puppeteer';
 
-// Group internal types/enums (alphabetically)
 import { Currency } from './enums/Currency';
 import { Transaction } from './types/Transaction';
 import { AccountInfo } from './types/AccountInfo';
 import { CsvRow } from './types/CsvRow';
 
-// Group configuration
 import { config, validateConfig } from './config/config';
 
-// Group services (alphabetically)
 import { getAccountDetails, extractTransactionsFromAccount, navigateToAccountsPage, getAccountNumbers, getAccountsInfo } from './services/AccountService';
 import { loginToBank } from './services/AuthService';
 import { convertCurrency } from './services/CurrencyService';
 import { parseCsvContent } from './services/FileService';
 import { convertToTransactions } from './services/TransactionService';
 
-// Export types and functions
 export { Currency } from './enums/Currency';
 export { Transaction } from './types/Transaction';
 export { AccountInfo } from './types/AccountInfo';
 export { navigateToAccountsPage, getAccountNumbers, getAccountsInfo } from './services/AccountService';
 
+const browserLaunchOptions = {
+  ignoreHTTPSErrors: true,
+  args: ['--no-sandbox', '--ignore-certificate-errors'],
+};
+
 /**
  * Get transactions from a bank account
- * @param username - The username to login with
- * @param password - The password to login with
- * @param accountNumber - The account number to extract transactions from
- * @param targetCurrency - The target currency to convert the transactions to
- * @param exchangeRate - The exchange rate to use for the conversion
- * @returns An array of {@link Transaction} objects
  */
 export async function getTransactions(
   username: string,
@@ -39,24 +34,22 @@ export async function getTransactions(
   exchangeRate?: number
 ): Promise<Transaction[]> {
   validateConfig();
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch(browserLaunchOptions as puppeteer.LaunchOptions);
   const page = await browser.newPage();
   await page.setDefaultNavigationTimeout(120000);
 
   try {
     await loginToBank(page, username, password);
+    await navigateToAccountsPage(page);
 
-    const accountDetails = await getAccountDetails(accountNumber, config, page);
+    const accountDetails = await getAccountDetails(accountNumber, page);
     const sourceCurrency = accountDetails.currency;
     if (!targetCurrency) {
       targetCurrency = sourceCurrency;
     }
 
-    let csvRows: CsvRow[] = [];
-    if (accountDetails.elementId) {
-      const fileContent = await extractTransactionsFromAccount(page, accountDetails.elementId);
-      csvRows = await parseCsvContent(fileContent);
-    }
+    const fileContent = await extractTransactionsFromAccount(page, accountNumber);
+    const csvRows: CsvRow[] = await parseCsvContent(fileContent);
 
     let transactions = convertToTransactions(csvRows, sourceCurrency);
 
@@ -72,9 +65,6 @@ export async function getTransactions(
 
 /**
  * Get list of all account numbers from the bank
- * @param username - The username to login with
- * @param password - The password to login with
- * @returns An array of account numbers
  */
 export async function getAllAccountNumbers(
   username: string,
@@ -82,8 +72,9 @@ export async function getAllAccountNumbers(
 ): Promise<string[]> {
   validateConfig();
   const browser = await puppeteer.launch({
-    headless: false, // Show the browser window
-    defaultViewport: null, // Use full screen
+    ...(browserLaunchOptions as puppeteer.LaunchOptions),
+    headless: false,
+    defaultViewport: null,
   });
   const page = await browser.newPage();
   await page.setDefaultNavigationTimeout(120000);
@@ -91,8 +82,7 @@ export async function getAllAccountNumbers(
   try {
     await loginToBank(page, username, password);
     await navigateToAccountsPage(page);
-    const accountNumbers = await getAccountNumbers(page);
-    return accountNumbers;
+    return await getAccountNumbers(page);
   } finally {
     await browser.close();
   }
@@ -100,29 +90,21 @@ export async function getAllAccountNumbers(
 
 /**
  * Get detailed information about all accounts from the bank
- * @param username - The username to login with
- * @param password - The password to login with
- * @returns An array of account information objects
  */
 export async function getAllAccountsInfo(
   username: string,
   password: string
 ): Promise<AccountInfo[]> {
   validateConfig();
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch(browserLaunchOptions as puppeteer.LaunchOptions);
   const page = await browser.newPage();
   await page.setDefaultNavigationTimeout(120000);
 
   try {
     await loginToBank(page, username, password);
     await navigateToAccountsPage(page);
-    const accountsInfo = await getAccountsInfo(page);
-    return accountsInfo;
+    return await getAccountsInfo(page);
   } finally {
     await browser.close();
   }
 }
-
-
-
-

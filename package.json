@@ -9,7 +9,8 @@
     "prepublishOnly": "npm run build",
     "test": "jest tests",
     "statement": "npx ts-node examples/get-statement.ts",
-    "accounts": "npx ts-node examples/get-accounts.ts"
+    "accounts": "npx ts-node examples/get-accounts.ts",
+    "api": "npx ts-node src/server.ts"
   },
   "keywords": [
     "csv",
